@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        .tutor-card {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+            background-color: #fff;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .tutor-info {
+            margin-bottom: 10px;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        footer {
+            margin-top: 20px;
+            padding: 10px 0;
+            text-align: center;
+            background-color: #e9ecef;
+            border-top: 1px solid #ccc;
+        }
+        .nav-links {
+            margin-top: 20px;
+        }
+        .nav-links a {
+            margin-right: 10px;
+            text-decoration: none;
+            color: #007bff;
+        }
+        .nav-links a:hover {
+            text-decoration: underline;
+        }
+        .filters {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Welcome to Your Dashboard</h1>
+    <h2>Available Tutors</h2>
+    
+    <!-- Sorting and Filtering Options -->
+    <div class="filters">
+        <label for="sortOptions">Sort By:</label>
+        <select id="sortOptions">
+            <option value="name">Name</option>
+            <option value="subject">Subject</option>
+            <option value="availability">Availability</option>
+        </select>
+
+        <label for="filterSubject">Filter By Subject:</label>
+        <select id="filterSubject">
+            <option value="all">All</option>
+            {% for subject in subjects %}
+            <option value="{{ subject }}">{{ subject }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div id="tutorsList">
+        {% for tutor in tutors %}
+        <div class="tutor-card" data-name="{{ tutor.name }}" data-subject="{{ tutor.subject }}" data-availability="{{ tutor.availability }}">
+            <div class="tutor-info">
+                <strong>{{ tutor.name }}</strong><br>
+                Subject: {{ tutor.subject }}<br>
+                Rate: ${{ tutor.rate }}/hour<br>
+                Years of Experience: {{ tutor.years_of_experience }}<br> 
+                Availability: {{ tutor.availability }}<br>
+                Biography: {{ tutor.biography }}<br>
+            </div>
+            <button onclick="bookSession('{{ tutor._id }}', '{{ tutor.name }}', '{{ tutor.subject }}')">Book Session</button>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="nav-links">
+        <h2>Navigate to:</h2>
+        <a href="/login">Login</a>
+        <a href="/register">Register</a>
+        <a href="/sessions">Booked Sessions</a>
+    </div>
+
+    <footer>
+        <p><a href="/contact">Contact Us</a></p>
+        <p><a href="/privacy">Privacy Policy</a></p>
+        <p><a href="/terms">Terms & Conditions</a></p>
+        <p>&copy; 2024 Tutoring Platform</p>
+    </footer>
+
+    <script>
+        // Function to sort tutors based on selected criteria
+        function sortTutors() {
+            const sortOption = document.getElementById('sortOptions').value;
+            const tutorsList = document.getElementById('tutorsList');
+            const tutors = Array.from(tutorsList.getElementsByClassName('tutor-card'));
+
+            tutors.sort((a, b) => {
+                if (sortOption === 'name') {
+                    return a.dataset.name.localeCompare(b.dataset.name);
+                } else if (sortOption === 'subject') {
+                    return a.dataset.subject.localeCompare(b.dataset.subject);
+                } else if (sortOption === 'availability') {
+                    return a.dataset.availability.localeCompare(b.dataset.availability);
+                }
+                return 0;
+            });
+
+            tutors.forEach(tutor => tutorsList.appendChild(tutor));
+        }
+
+        // Function to filter tutors by subject
+        function filterTutors() {
+            const selectedSubject = document.getElementById('filterSubject').value;
+            const tutors = document.querySelectorAll('.tutor-card');
+
+            tutors.forEach(tutor => {
+                const subject = tutor.dataset.subject;
+                tutor.style.display = (selectedSubject === 'all' || subject === selectedSubject) ? 'block' : 'none';
+            });
+        }
+
+        // Event listeners for sorting and filtering
+        document.getElementById('sortOptions').addEventListener('change', sortTutors);
+        document.getElementById('filterSubject').addEventListener('change', filterTutors);
+
+        // Ensure sorting and filtering work on page load
+        sortTutors();
+        filterTutors();
+
+        // Function to book a session
+        async function bookSession(tutorId, tutorName, tutorSubject) {
+            const sessionTime = prompt("Enter session time (YYYY-MM-DD HH:MM format):");
+            if (sessionTime) {
+                const data = { tutor_id: tutorId, tutor_name: tutorName, tutor_subject: tutorSubject, scheduled_time: sessionTime };
+
+                const response = await fetch('/book/confirm', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
+                });
+
+                if (response.ok) {
+                    const confirmBooking = confirm(`Confirm Your Booking\n\nSession Details: Your tutoring session with ${tutorName} on ${sessionTime}.`);
+                    if (confirmBooking) {
+                        const bookResponse = await fetch('/book/session', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(data),
+                        });
+
+                        const result = await bookResponse.json();
+                        alert(result.message);
+                        if (bookResponse.ok) {
+                            window.location.href = '/sessions';
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>

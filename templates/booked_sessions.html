@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Confirmation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        .confirmation-message {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 5px;
+        }
+        .cancellation-note {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 5px;
+            color: #721c24;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #c82333;
+        }
+        .nav-links {
+            margin-top: 20px;
+        }
+        .nav-links a {
+            margin-right: 10px;
+            text-decoration: none;
+            color: #007bff;
+        }
+        .nav-links a:hover {
+            text-decoration: underline;
+        }
+        footer {
+            margin-top: 20px;
+            padding: 10px 0;
+            text-align: center;
+            background-color: #e9ecef;
+            border-top: 1px solid #ccc;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-start;  /* Align buttons horizontally */
+            margin-top: 10px;
+        }
+        .button-group button {
+            margin-right: 10px;
+        }
+    </style>
+    <script>
+        async function cancelBooking(sessionId) {
+            if (confirm("Are you sure you want to cancel this booking? This action cannot be undone.")) {
+                alert("Your booking has been successfully canceled.");
+                window.location.href = '/dashboard'; // Redirect to the dashboard after cancellation
+            } else {
+                alert("There was an error canceling your booking. Please try again later.");
+            }
+        }
+
+        let bookingHistory = [];
+
+        // Function to undo the last action (go back to the previous state)
+        function undoBooking() {
+            if (bookingHistory.length > 1) {
+                bookingHistory.pop();  // Remove the last change
+                const previousBooking = bookingHistory[bookingHistory.length - 1];
+                loadBookingDetails(previousBooking);
+            } else {
+                alert("No previous booking to undo.");
+            }
+        }
+
+        // Function to redo the undone action (if any)
+        function redoBooking() {
+            // Check if there's a future state in the history to redo
+            // You'll need to implement storing a "redo" history stack
+        }
+
+        // Function to load booking details
+        function loadBookingDetails(booking) {
+            document.getElementById("tutor-name").innerText = booking.tutor_name;
+            document.getElementById("session-time").innerText = booking.scheduled_time;
+            // Load other booking details as needed
+        }
+
+        async function confirmBooking() {
+            const bookingData = {
+                tutor_name: document.getElementById("tutor-name").innerText,
+                scheduled_time: document.getElementById("session-time").innerText
+            };
+
+            const response = await fetch('/book/confirm', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(bookingData)
+            });
+
+            if (response.ok) {
+                alert("Booking confirmed!");
+                window.location.href = '/sessions';  // Redirect to the sessions page
+            }
+        }
+
+        // Save the current state for undo functionality before confirming
+        bookingHistory.push({
+            tutor_name: document.getElementById("tutor-name").innerText,
+            scheduled_time: document.getElementById("session-time").innerText
+        });
+    </script>
+</head>
+<body>
+    <h1>Booked Sessions</h1>
+    <h2>Here are your upcoming tutoring appointments:</h2>
+    {% for session in sessions %}
+    <div class="confirmation-message">
+        Tutor: {{ session.tutor_name }}<br>
+        Subject: {{ session.tutor_subject }}<br>
+        Date & Time: {{ session.scheduled_time }}<br>
+        <br>
+        <!-- All buttons in one line -->
+        <div class="button-group">
+            <button onclick="cancelBooking('{{ session.id }}')">Cancel Booking</button>
+            <button onclick="goBackToEdit()">Edit Booking</button>
+            <button onclick="undoBooking()">Undo</button>
+            <button onclick="redoBooking()">Redo</button>
+        </div>
+    </div>
+    {% endfor %}
+
+    <div class="cancellation-note">
+        <strong>Important Cancellation Information:</strong><br>
+        By confirming this session, you are reserving the tutor's time, and any session fees will be based on the tutor's rate. Please note that cancellations made less than 24 hours before the scheduled session may incur a fee. This ensures that our tutors’ time is respected and helps cover potential losses due to last-minute changes.
+    </div>
+
+    <div class="nav-links">
+        <h2>Navigate to:</h2>
+        <a href="/login">Login</a>
+        <a href="/register">Register</a>
+        <a href="/dashboard">Dashboard</a>
+    </div>
+
+    <script>
+        function goBackToEdit() {
+            window.location.href = '/dashboard';  // Navigate back to the dashboard
+        }
+    </script>
+    
+    <footer>
+        <!-- Footer links to separate pages -->
+        <p><a href="/contact">Contact Us</a></p>
+        <p><a href="/privacy">Privacy Policy</a></p>
+        <p><a href="/terms">Terms & Conditions</a></p>
+        <p>&copy; 2024 Tutoring Platform</p>
+    </footer>
+</body>
+</html>
